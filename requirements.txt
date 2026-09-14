@@ -1,0 +1,6 @@
+customtkinter>=5.2
+spacy>=3.7
+click>=8.0
+deep-translator>=1.11
+edge-tts>=6.1
+requests>=2.31
