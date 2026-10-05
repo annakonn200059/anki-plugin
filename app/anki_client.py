@@ -5,7 +5,7 @@ import uuid
 
 import requests
 
-from app import constants
+from app import constants, settings
 
 
 class AnkiConnectionError(Exception):
@@ -22,11 +22,15 @@ class DuplicateNoteError(Exception):
 
 def invoke(action, **params):
     payload = {"action": action, "version": constants.ANKICONNECT_VERSION, "params": params}
+    url = settings.ankiconnect_url()
     try:
-        response = requests.post(constants.ANKICONNECT_URL, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=10)
     except requests.exceptions.RequestException:
         raise AnkiConnectionError(
-            "Could not connect to Anki. Make sure Anki is running with the AnkiConnect add-on installed."
+            f"Could not connect to Anki at {url}.\n"
+            "1) Open Anki and keep it running.\n"
+            "2) If you haven't yet: in Anki go to Tools > Add-ons > Get Add-ons, "
+            f"enter code {constants.ANKICONNECT_ADDON_CODE}, then restart Anki."
         )
 
     result = response.json()
@@ -39,6 +43,10 @@ def invoke(action, **params):
 
 def check_connection():
     invoke("version")
+
+
+def deck_names() -> list:
+    return sorted(invoke("deckNames"))
 
 
 def ensure_deck(deck_name: str = constants.DECK_NAME):

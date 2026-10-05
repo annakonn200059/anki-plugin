@@ -1,11 +1,12 @@
-ANKICONNECT_URL = "http://localhost:8765"
+# AnkiConnect's default address. It's local-only and identical on every machine;
+# override via "ankiconnect_url" in the settings file if someone changed it.
+ANKICONNECT_URL = "http://127.0.0.1:8765"
 ANKICONNECT_VERSION = 6
+ANKICONNECT_ADDON_CODE = "2055492159"
 
-DECKS = [
-    "Anna + Andrei <3 Deutsch lernen",
-    "B1 Intensiv",
-]
-DECK_NAME = DECKS[0]
+# Used only when Anki has no decks yet / on first run; the deck menu otherwise
+# lists the user's actual Anki decks.
+DECK_NAME = "Deutsch lernen"
 MODEL_NAME = "DE Sentence Vocab v2 (Anna+Andrei)"
 
 FIELD_SENTENCE_FULL = "SentenceFull"

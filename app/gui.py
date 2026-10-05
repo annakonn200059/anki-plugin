@@ -5,7 +5,7 @@ import threading
 
 import customtkinter as ctk
 
-from app import anki_client, constants, pipeline
+from app import anki_client, constants, pipeline, settings
 
 
 class App(ctk.CTk):
@@ -41,9 +41,16 @@ class App(ctk.CTk):
         )
         self.status_label.pack(fill="x", **pad)
 
-        ctk.CTkLabel(self, text="Deck:", anchor="w").pack(fill="x", padx=16)
-        self.deck_var = ctk.StringVar(value=constants.DECKS[0])
-        self.deck_menu = ctk.CTkOptionMenu(self, values=constants.DECKS, variable=self.deck_var)
+        self.reconnect_btn = ctk.CTkButton(
+            self, text="Reconnect to Anki", width=160, command=self._check_connection_async
+        )
+
+        ctk.CTkLabel(self, text="Deck (pick one or type a new name):", anchor="w").pack(
+            fill="x", padx=16
+        )
+        initial_deck = settings.get("last_deck") or constants.DECK_NAME
+        self.deck_var = ctk.StringVar(value=initial_deck)
+        self.deck_menu = ctk.CTkComboBox(self, values=[initial_deck], variable=self.deck_var)
         self.deck_menu.pack(fill="x", **pad)
 
         ctk.CTkLabel(self, text="German sentence:", anchor="w").pack(fill="x", padx=16)
@@ -116,8 +123,11 @@ class App(ctk.CTk):
     def _handle_queue_item(self, kind, payload):
         if kind == "conn_ok":
             self._set_status("Connected to Anki.", error=False)
+            self.reconnect_btn.pack_forget()
+            self._set_deck_choices(payload)
         elif kind == "conn_error":
             self._set_status(f"{payload}", error=True)
+            self.reconnect_btn.pack(after=self.status_label, anchor="w", padx=16, pady=(0, 6))
         elif kind == "generate_ok":
             self.generate_btn.configure(state="normal")
             self._card_data = payload
@@ -130,6 +140,7 @@ class App(ctk.CTk):
             self._set_status(f"Error: {payload}", error=True)
         elif kind == "add_ok":
             self._set_status(f"Added to Anki (note id {payload}).", error=False)
+            settings.set("last_deck", self.deck_var.get())
             self._hide_preview()
             self._card_data = None
             self.sentence_entry.delete(0, "end")
@@ -139,10 +150,12 @@ class App(ctk.CTk):
             self._set_status(f"Error: {payload}", error=True)
 
     def _check_connection_async(self):
+        self._set_status("Checking connection to Anki...", error=False)
+
         def worker():
             try:
                 anki_client.check_connection()
-                self._queue.put(("conn_ok", None))
+                self._queue.put(("conn_ok", anki_client.deck_names()))
             except Exception as e:
                 self._queue.put(("conn_error", str(e)))
 
@@ -177,7 +190,10 @@ class App(ctk.CTk):
         self._card_data.translation = self.translation_entry.get().strip()
         self._card_data.answer = self.answer_entry.get().strip()
         allow_dup = self.allow_dup_var.get()
-        deck_name = self.deck_var.get()
+        deck_name = self.deck_var.get().strip()
+        if not deck_name:
+            self._set_status("Please choose or type a deck name.", error=True)
+            return
         card_data = self._card_data
 
         self.add_btn.configure(state="disabled")
@@ -191,6 +207,14 @@ class App(ctk.CTk):
                 self._queue.put(("add_error", str(e)))
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def _set_deck_choices(self, deck_names):
+        current = self.deck_var.get()
+        choices = [d for d in deck_names if d != "Default"] or [constants.DECK_NAME]
+        if current not in choices:
+            choices.insert(0, current)
+        self.deck_menu.configure(values=choices)
+        self.deck_var.set(current)
 
     # ---- preview panel -----------------------------------------------------------
 

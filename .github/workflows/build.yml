@@ -1,0 +1,65 @@
+name: Build app
+
+# Run manually from the Actions tab, or push a tag like v1.0 to also publish a Release.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: AnkiDeutsch-Windows
+          - os: macos-latest        # Apple Silicon (M1–M4)
+            artifact: AnkiDeutsch-Mac-AppleSilicon
+          - os: macos-15-intel      # older Intel Macs
+            artifact: AnkiDeutsch-Mac-Intel
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+          python -m spacy download de_core_news_sm
+
+      - name: Build
+        run: pyinstaller anki_deutsch.spec --noconfirm
+
+      - name: Self-test and zip (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          "dist/Anki Deutsch.app/Contents/MacOS/Anki Deutsch" --selftest
+          cd dist && ditto -c -k --keepParent "Anki Deutsch.app" "../${{ matrix.artifact }}.zip"
+
+      - name: Self-test and zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\Anki Deutsch\Anki Deutsch.exe" -ArgumentList "--selftest" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Self-test failed with exit code $($p.ExitCode)" }
+          Compress-Archive -Path "dist\Anki Deutsch" -DestinationPath "${{ matrix.artifact }}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.zip
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}.zip
