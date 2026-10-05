@@ -22,6 +22,7 @@ python -m spacy download de_core_news_sm
 ## Running
 
 ```bash
+source .venv/bin/activate
 python -m app.main
 ```
 

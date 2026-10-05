@@ -41,8 +41,8 @@ def check_connection():
     invoke("version")
 
 
-def ensure_deck():
-    invoke("createDeck", deck=constants.DECK_NAME)
+def ensure_deck(deck_name: str = constants.DECK_NAME):
+    invoke("createDeck", deck=deck_name)
 
 
 def ensure_model():
@@ -71,9 +71,9 @@ def store_media(audio_bytes: bytes) -> str:
     return filename
 
 
-def add_note(fields: dict, allow_duplicate: bool = False):
+def add_note(fields: dict, deck_name: str = constants.DECK_NAME, allow_duplicate: bool = False):
     note = {
-        "deckName": constants.DECK_NAME,
+        "deckName": deck_name,
         "modelName": constants.MODEL_NAME,
         "fields": fields,
         "tags": [constants.NOTE_TAG],

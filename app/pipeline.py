@@ -64,8 +64,8 @@ def build_card(sentence: str, target: str) -> CardData:
     )
 
 
-def confirm_add(card_data: CardData, allow_duplicate: bool = False):
-    anki_client.ensure_deck()
+def confirm_add(card_data: CardData, deck_name: str, allow_duplicate: bool = False):
+    anki_client.ensure_deck(deck_name)
     anki_client.ensure_model()
     audio_filename = anki_client.store_media(card_data.audio_bytes)
     fields = {
@@ -75,4 +75,4 @@ def confirm_add(card_data: CardData, allow_duplicate: bool = False):
         FIELD_ANSWER: card_data.answer,
         FIELD_AUDIO: f"[sound:{audio_filename}]",
     }
-    return anki_client.add_note(fields, allow_duplicate=allow_duplicate)
+    return anki_client.add_note(fields, deck_name=deck_name, allow_duplicate=allow_duplicate)

@@ -1,7 +1,11 @@
 ANKICONNECT_URL = "http://localhost:8765"
 ANKICONNECT_VERSION = 6
 
-DECK_NAME = "Anna + Andrei <3 Deutsch lernen"
+DECKS = [
+    "Anna + Andrei <3 Deutsch lernen",
+    "B1 Intensiv",
+]
+DECK_NAME = DECKS[0]
 MODEL_NAME = "DE Sentence Vocab v2 (Anna+Andrei)"
 
 FIELD_SENTENCE_FULL = "SentenceFull"

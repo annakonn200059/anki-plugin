@@ -5,7 +5,7 @@ import threading
 
 import customtkinter as ctk
 
-from app import anki_client, pipeline
+from app import anki_client, constants, pipeline
 
 
 class App(ctk.CTk):
@@ -40,6 +40,11 @@ class App(ctk.CTk):
             anchor="w", justify="left", wraplength=580,
         )
         self.status_label.pack(fill="x", **pad)
+
+        ctk.CTkLabel(self, text="Deck:", anchor="w").pack(fill="x", padx=16)
+        self.deck_var = ctk.StringVar(value=constants.DECKS[0])
+        self.deck_menu = ctk.CTkOptionMenu(self, values=constants.DECKS, variable=self.deck_var)
+        self.deck_menu.pack(fill="x", **pad)
 
         ctk.CTkLabel(self, text="German sentence:", anchor="w").pack(fill="x", padx=16)
         self.sentence_entry = ctk.CTkEntry(
@@ -172,6 +177,7 @@ class App(ctk.CTk):
         self._card_data.translation = self.translation_entry.get().strip()
         self._card_data.answer = self.answer_entry.get().strip()
         allow_dup = self.allow_dup_var.get()
+        deck_name = self.deck_var.get()
         card_data = self._card_data
 
         self.add_btn.configure(state="disabled")
@@ -179,7 +185,7 @@ class App(ctk.CTk):
 
         def worker():
             try:
-                note_id = pipeline.confirm_add(card_data, allow_duplicate=allow_dup)
+                note_id = pipeline.confirm_add(card_data, deck_name, allow_duplicate=allow_dup)
                 self._queue.put(("add_ok", note_id))
             except Exception as e:
                 self._queue.put(("add_error", str(e)))
